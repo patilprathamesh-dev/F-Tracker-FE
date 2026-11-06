@@ -1,72 +1,103 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { downloadCSV, fmtDate, inr, monthLabel, toInputDate } from '@/lib/format';
-import { Empty, ErrorBox, Stat } from '@/components/ui';
+import { Badge, Button, Card, CardList, EmptyState, ErrorBox, Field, Input, ListCard, ListSkeleton, PageHeader, Segmented, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
+import PullToRefresh from '@/components/PullToRefresh';
+
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'given', label: 'Received' },
+  { value: 'taken', label: 'Paid by me' },
+];
 
 export default function PaymentsPage() {
   const now = new Date();
   const [from, setFrom] = useState(toInputDate(new Date(now.getFullYear(), now.getMonth() - 2, 1)));
   const [to, setTo] = useState(toInputDate(now));
+  const [direction, setDirection] = useState('all');
   const [list, setList] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    setList(null);
-    api.get(`/payments?from=${from}&to=${to}`).then(setList).catch((e) => setError(e.message));
-  }, [from, to]);
+  const load = useCallback(() => {
+    const dir = direction === 'all' ? '' : `&direction=${direction}`;
+    return api.get(`/payments?from=${from}&to=${to}${dir}`).then((l) => { setList(l); setError(''); }).catch((e) => setError(e.message));
+  }, [from, to, direction]);
 
-  const interest = list?.filter((p) => p.type === 'interest').reduce((s, p) => s + p.amount, 0) || 0;
-  const principal = list?.filter((p) => p.type === 'principal').reduce((s, p) => s + p.amount, 0) || 0;
+  useEffect(() => { setList(null); load(); }, [load]);
+
+  const sum = (fn) => list?.filter(fn).reduce((s, p) => s + p.amount, 0) || 0;
+  const received = sum((p) => p.direction !== 'taken');
+  const receivedInterest = sum((p) => p.direction !== 'taken' && p.type === 'interest');
+  const paid = sum((p) => p.direction === 'taken');
+  const paidInterest = sum((p) => p.direction === 'taken' && p.type === 'interest');
 
   const exportCSV = () =>
-    downloadCSV(`payments_${from}_to_${to}.csv`, [
-      ['Date', 'Person', 'Loan', 'Type', 'For month', 'Amount', 'Method', 'Note'],
-      ...list.map((p) => [toInputDate(p.paidOn), p.person?.name, p.loan?.title || 'Loan', p.type, p.forMonth || '', p.amount, p.method, p.note || '']),
+    downloadCSV(`payments_${from}_to_${to}${direction === 'all' ? '' : `_${direction}`}.csv`, [
+      ['Date', 'Direction', 'Person', 'Loan', 'Type', 'For month', 'Amount', 'Method', 'Note'],
+      ...list.map((p) => [
+        toInputDate(p.paidOn), p.direction === 'taken' ? 'Paid by me' : 'Received', p.person?.name, p.loan?.title || 'Loan',
+        p.type, p.forMonth || '', p.amount, p.method, p.note || '',
+      ]),
     ]);
+
+  const describe = (p) => (p.type === 'interest' ? `Interest (${monthLabel(p.forMonth)})` : 'Principal');
 
   return (
     <>
-      <div className="page-head">
-        <h1>Payments</h1>
-        <button className="btn ghost" onClick={exportCSV} disabled={!list?.length}>Export CSV</button>
-      </div>
-      <div className="filters">
-        <label>From <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-        <label>To <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+      <PullToRefresh onRefresh={load} />
+      <PageHeader title="Payments" actions={<Button variant="ghost" onClick={exportCSV} disabled={!list?.length}>Export CSV</Button>} />
+
+      <Segmented className="mb-3" value={direction} onChange={setDirection} options={FILTERS} />
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-md">
+        <Field label="From"><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
+        <Field label="To"><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
       <ErrorBox error={error} />
 
-      <div className="stats">
-        <Stat label="Interest received" value={inr(interest)} tone="good" />
-        <Stat label="Principal received" value={inr(principal)} />
-        <Stat label="Total" value={inr(interest + principal)} />
-      </div>
+      <StatGrid>
+        {direction !== 'taken' && <Stat label="Received" value={inr(received)} hint={`${inr(receivedInterest)} interest`} tone="good" />}
+        {direction !== 'given' && <Stat label="Paid by me" value={inr(paid)} hint={`${inr(paidInterest)} interest`} tone="warn" />}
+        {direction === 'all' && <Stat label="Net" value={`${received - paid < 0 ? '−' : ''}${inr(Math.abs(received - paid))}`} tone={received - paid >= 0 ? 'good' : 'bad'} />}
+        <Stat label="Payments" value={list?.length ?? '—'} />
+      </StatGrid>
 
-      <section className="card">
-        {!list ? <p className="muted">Loading…</p> : list.length === 0 ? <Empty>No payments in this period.</Empty> : (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Date</th><th>Person</th><th>Loan</th><th>Type</th><th className="num">Amount</th><th>Method</th><th>Note</th></tr></thead>
-              <tbody>
-                {list.map((p) => (
-                  <tr key={p._id}>
-                    <td>{fmtDate(p.paidOn)}</td>
-                    <td>{p.person ? <Link href={`/persons/${p.person._id}`}>{p.person.name}</Link> : '—'}</td>
-                    <td>{p.loan ? <Link href={`/loans/${p.loan._id}`}>{p.loan.title || 'Loan'}</Link> : '—'}</td>
-                    <td>{p.type === 'interest' ? `Interest (${monthLabel(p.forMonth)})` : 'Principal'}</td>
-                    <td className="num">{inr(p.amount)}</td>
-                    <td>{p.method}</td>
-                    <td className="muted">{p.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {!list ? <ListSkeleton /> : list.length === 0 ? <Card><EmptyState>No payments in this period.</EmptyState></Card> : (
+        <>
+          <CardList>
+            {list.map((p) => (
+              <ListCard
+                key={p._id}
+                href={p.loan ? `/loans/${p.loan._id}` : undefined}
+                accent={p.direction}
+                title={p.person?.name || '—'}
+                amount={<span className={p.direction === 'taken' ? 'text-orange-700 dark:text-orange-300' : 'text-good dark:text-green-400'}>{p.direction === 'taken' ? '−' : '+'}{inr(p.amount)}</span>}
+                badge={<><Badge status={p.direction} /><span>{describe(p)}</span></>}
+                meta={fmtDate(p.paidOn)}
+                sub={[p.loan?.title || 'Loan', p.method, p.note].filter(Boolean).join(' · ')}
+              />
+            ))}
+          </CardList>
+          <Card className="hidden md:block">
+            <Table head={['Date', '', 'Person', 'Loan', 'Type', { label: 'Amount', right: true }, 'Method', 'Note']}>
+              {list.map((p) => (
+                <Tr key={p._id}>
+                  <Td muted>{fmtDate(p.paidOn)}</Td>
+                  <Td><Badge status={p.direction} /></Td>
+                  <Td>{p.person ? <Link className="font-medium hover:underline" href={`/persons/${p.person._id}`}>{p.person.name}</Link> : '—'}</Td>
+                  <Td>{p.loan ? <Link className="text-brand hover:underline dark:text-brand-light" href={`/loans/${p.loan._id}`}>{p.loan.title || 'Loan'}</Link> : '—'}</Td>
+                  <Td>{describe(p)}</Td>
+                  <Td right className={p.direction === 'taken' ? 'text-orange-700 dark:text-orange-300' : ''}>{p.direction === 'taken' ? '−' : ''}{inr(p.amount)}</Td>
+                  <Td>{p.method}</Td>
+                  <Td muted className="max-w-48 truncate">{p.note}</Td>
+                </Tr>
+              ))}
+            </Table>
+          </Card>
+        </>
+      )}
     </>
   );
 }

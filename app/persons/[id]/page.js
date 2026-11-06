@@ -1,19 +1,61 @@
 'use client';
 
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate, inr } from '@/lib/format';
-import { Badge, Empty, ErrorBox, Modal } from '@/components/ui';
+import { Badge, BottomSheet, Button, Card, CardHead, CardList, EmptyState, ErrorBox, Fab, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
 import { LoanForm, PersonForm } from '@/components/Forms';
+
+function LoanSection({ title, loans, direction, onAdd, router }) {
+  const taken = direction === 'taken';
+  return (
+    <Card className="mb-4">
+      <CardHead title={title}>
+        <Button variant={taken ? 'ghost' : 'primary'} onClick={onAdd}>{taken ? '+ Borrow money' : '+ Give money'}</Button>
+      </CardHead>
+      {loans.length === 0 ? <EmptyState>{taken ? 'You have not borrowed from this person.' : 'No money given yet.'}</EmptyState> : (
+        <>
+          <CardList>
+            {loans.map((l) => (
+              <ListCard
+                key={l._id}
+                href={`/loans/${l._id}`}
+                accent={direction}
+                title={l.title || 'Loan'}
+                amount={inr(l.principalOutstanding)}
+                badge={<Badge status={l.status} />}
+                meta={`${l.interestRate}% · ${inr(l.monthlyInterest)}/mo`}
+                sub={`${taken ? 'Taken' : 'Given'} ${inr(l.principal)} on ${fmtDate(l.startDate)}${l.principalPaid ? ` · ${inr(l.principalPaid)} repaid` : ''} · due on day ${l.dueDay}`}
+              />
+            ))}
+          </CardList>
+          <Table head={['Title', taken ? 'Date taken' : 'Date given', { label: 'Amount', right: true }, { label: 'Still owed', right: true }, { label: 'Interest', right: true }, { label: 'Per month', right: true }, 'Due day', 'Status']}>
+            {loans.map((l) => (
+              <Tr key={l._id} onClick={() => router.push(`/loans/${l._id}`)}>
+                <Td className="font-medium text-brand dark:text-brand-light">{l.title || 'Loan'}</Td>
+                <Td muted>{fmtDate(l.startDate)}</Td>
+                <Td right>{inr(l.principal)}</Td>
+                <Td right>{inr(l.principalOutstanding)}</Td>
+                <Td right>{l.interestRate}%</Td>
+                <Td right>{inr(l.monthlyInterest)}</Td>
+                <Td>{l.dueDay}</Td>
+                <Td><Badge status={l.status} /></Td>
+              </Tr>
+            ))}
+          </Table>
+        </>
+      )}
+    </Card>
+  );
+}
 
 export default function PersonDetail() {
   const { id } = useParams();
   const router = useRouter();
   const [person, setPerson] = useState(null);
   const [error, setError] = useState('');
-  const [modal, setModal] = useState(null); // 'edit' | 'loan'
+  const [modal, setModal] = useState(null); // 'edit' | 'given' | 'taken'
 
   const load = useCallback(() => {
     api.get(`/persons/${id}`).then(setPerson).catch((e) => setError(e.message));
@@ -27,75 +69,53 @@ export default function PersonDetail() {
   };
 
   if (error) return <ErrorBox error={error} />;
-  if (!person) return <p className="muted">Loading…</p>;
+  if (!person) return <PageSkeleton stats={2} rows={3} />;
 
-  const active = person.loans.filter((l) => l.status === 'active');
-  const total = active.reduce((s, l) => s + l.principal, 0);
-  const monthly = active.reduce((s, l) => s + l.monthlyInterest, 0);
+  const given = person.loans.filter((l) => (l.direction || 'given') === 'given');
+  const taken = person.loans.filter((l) => l.direction === 'taken');
+  const sum = (list, k) => list.filter((l) => l.status === 'active').reduce((s, l) => s + l[k], 0);
 
   return (
     <>
-      <Link href="/persons" className="back">← People</Link>
-      <div className="page-head">
-        <div>
-          <h1>{person.name}</h1>
-          <p className="muted">{[person.phone, person.email].filter(Boolean).join(' · ') || 'No contact details'}</p>
-        </div>
-        <div className="btn-row">
-          {person.phone && <a className="btn ghost" href={`tel:${person.phone}`}>Call</a>}
-          <button className="btn ghost" onClick={() => setModal('edit')}>Edit</button>
-          <button className="btn danger ghost" onClick={remove}>Delete</button>
-        </div>
-      </div>
+      <PageHeader
+        back={{ href: '/persons', label: 'People' }}
+        title={person.name}
+        subtitle={[person.phone, person.email].filter(Boolean).join(' · ') || 'No contact details'}
+        actions={
+          <>
+            {person.phone && <Button variant="ghost" href={`tel:${person.phone}`}>Call</Button>}
+            <Button variant="ghost" onClick={() => setModal('edit')}>Edit</Button>
+            <Button variant="danger" onClick={remove}>Delete</Button>
+          </>
+        }
+      />
 
       {(person.notes || person.address) && (
-        <div className="card note">
+        <Card tone="info" className="mb-4">
           {person.address && <p><strong>Address:</strong> {person.address}</p>}
-          {person.notes && <p>{person.notes}</p>}
-        </div>
+          {person.notes && <p className="mt-1">{person.notes}</p>}
+        </Card>
       )}
 
-      <div className="stats">
-        <div className="stat"><div className="stat-label">Total given (active)</div><div className="stat-value">{inr(total)}</div></div>
-        <div className="stat"><div className="stat-label">Interest per month</div><div className="stat-value">{inr(monthly)}</div></div>
-      </div>
+      <StatGrid>
+        <Stat label="I gave (still owed)" value={inr(sum(given, 'principalOutstanding'))} hint={`${inr(sum(given, 'monthlyInterest'))} interest / month`} />
+        <Stat label="I took (still owed)" value={inr(sum(taken, 'principalOutstanding'))} hint={`${inr(sum(taken, 'monthlyInterest'))} interest / month`} tone={taken.length ? 'warn' : ''} />
+      </StatGrid>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Loans</h2>
-          <button className="btn" onClick={() => setModal('loan')}>+ Give money</button>
-        </div>
-        {person.loans.length === 0 ? <Empty>No loans yet.</Empty> : (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Title</th><th>Date given</th><th className="num">Amount</th><th className="num">Interest</th><th className="num">Per month</th><th>Due day</th><th>Status</th></tr></thead>
-              <tbody>
-                {person.loans.map((l) => (
-                  <tr key={l._id} className="clickable" onClick={() => router.push(`/loans/${l._id}`)}>
-                    <td><Link href={`/loans/${l._id}`}>{l.title || 'Loan'}</Link></td>
-                    <td>{fmtDate(l.startDate)}</td>
-                    <td className="num">{inr(l.principal)}</td>
-                    <td className="num">{l.interestRate}%</td>
-                    <td className="num">{inr(l.monthlyInterest)}</td>
-                    <td>{l.dueDay}</td>
-                    <td><Badge status={l.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <LoanSection title="Money I gave" loans={given} direction="given" onAdd={() => setModal('given')} router={router} />
+      <LoanSection title="Money I took" loans={taken} direction="taken" onAdd={() => setModal('taken')} router={router} />
+
+      <Fab onClick={() => setModal('given')} label={`Give money to ${person.name}`} />
 
       {modal === 'edit' && (
-        <Modal title="Edit person" onClose={() => setModal(null)}>
+        <BottomSheet title="Edit person" onClose={() => setModal(null)}>
           <PersonForm initial={person} onCancel={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
-        </Modal>
+        </BottomSheet>
       )}
-      {modal === 'loan' && (
-        <Modal title={`Give money to ${person.name}`} onClose={() => setModal(null)}>
-          <LoanForm personId={id} onCancel={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
-        </Modal>
+      {(modal === 'given' || modal === 'taken') && (
+        <BottomSheet title={modal === 'taken' ? `Borrow money from ${person.name}` : `Give money to ${person.name}`} onClose={() => setModal(null)}>
+          <LoanForm personId={id} direction={modal} onCancel={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
+        </BottomSheet>
       )}
     </>
   );

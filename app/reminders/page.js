@@ -4,77 +4,91 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { Badge, Empty, ErrorBox } from '@/components/ui';
+import { Badge, Button, Card, cn, EmptyState, ErrorBox, InfoBox, ListSkeleton, PageHeader, Segmented } from '@/components/ui';
+import PushControls from '@/components/PushControls';
+import PullToRefresh from '@/components/PullToRefresh';
+
+const ACCENT = { overdue: 'border-l-bad', due: 'border-l-warn', upcoming: 'border-l-brand' };
 
 export default function RemindersPage() {
   const [list, setList] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const [perm, setPerm] = useState('default');
 
-  const load = useCallback(() => {
+  const load = useCallback(() =>
     api.get(`/reminders${showAll ? '' : '?unread=true'}`)
       .then((l) => {
         setList(l);
+        setError('');
         if (!showAll) window.dispatchEvent(new CustomEvent('reminders-changed', { detail: l.length }));
       })
-      .catch((e) => setError(e.message));
-  }, [showAll]);
+      .catch((e) => setError(e.message)), [showAll]);
 
-  useEffect(load, [load]);
-  useEffect(() => {
-    if (typeof Notification !== 'undefined') setPerm(Notification.permission);
-  }, []);
+  useEffect(() => { load(); }, [load]);
 
   const runNow = async () => {
-    const r = await api.post('/reminders/run');
-    setInfo(r.created ? `${r.created} new reminder(s) created.` : 'Checked: no new reminders.');
-    load();
+    try {
+      const r = await api.post('/reminders/run');
+      setInfo(r.created ? `${r.created} new reminder(s) created.` : 'Checked: no new reminders.');
+      load();
+    } catch (e) { setError(e.message); }
   };
   const markRead = async (id) => { await api.patch(`/reminders/${id}/read`, { read: true }); load(); };
   const markAll = async () => { await api.patch('/reminders/read-all'); load(); };
-  const enableNotif = async () => setPerm(await Notification.requestPermission());
 
   return (
     <>
-      <div className="page-head">
-        <h1>Reminders</h1>
-        <div className="btn-row">
-          <button className="btn ghost" onClick={runNow}>Check now</button>
-          <button className="btn ghost" onClick={markAll} disabled={!list?.some((r) => !r.read)}>Mark all read</button>
-        </div>
-      </div>
+      <PullToRefresh onRefresh={load} />
+      <PageHeader
+        title="Reminders"
+        actions={
+          <>
+            <Button variant="ghost" onClick={runNow}>Check now</Button>
+            <Button variant="ghost" onClick={markAll} disabled={!list?.some((r) => !r.read)}>Mark all read</Button>
+          </>
+        }
+      />
 
-      <p className="muted">
+      <PushControls />
+
+      <p className="mb-4 text-[15px] text-slate-500 dark:text-slate-400">
         The server checks every day and creates a reminder a few days before each due date, on the due date, and when a payment is overdue.
-        {perm !== 'granted' && typeof Notification !== 'undefined' && (
-          <> <button className="link-btn" onClick={enableNotif}>Turn on browser notifications</button></>
-        )}
       </p>
 
-      <div className="tabs">
-        <button className={!showAll ? 'active' : ''} onClick={() => setShowAll(false)}>Unread</button>
-        <button className={showAll ? 'active' : ''} onClick={() => setShowAll(true)}>All</button>
-      </div>
+      <Segmented className="mb-4 sm:max-w-xs" value={showAll ? 'all' : 'unread'} onChange={(v) => setShowAll(v === 'all')} options={[{ value: 'unread', label: 'Unread' }, { value: 'all', label: 'All' }]} />
       <ErrorBox error={error} />
-      {info && <div className="info">{info}</div>}
+      <InfoBox>{info}</InfoBox>
 
-      {!list ? <p className="muted">Loading…</p> : list.length === 0 ? <Empty>No reminders. Everyone is up to date.</Empty> : (
-        <div className="reminders">
-          {list.map((r) => (
-            <div key={r._id} className={`card reminder reminder-${r.kind} ${r.read ? 'is-read' : ''}`}>
-              <div className="grow">
-                <div className="reminder-top"><Badge status={r.kind} /> <span className="muted small">Due {fmtDate(r.dueDate)}</span></div>
-                <p>{r.message}</p>
-                <div className="small">
-                  {r.person && <Link href={`/persons/${r.person._id}`}>{r.person.name}</Link>}
-                  {r.loan && <> · <Link href={`/loans/${r.loan._id}`}>Open loan</Link></>}
+      {!list ? <ListSkeleton /> : list.length === 0 ? <Card><EmptyState>No reminders. Everyone is up to date.</EmptyState></Card> : (
+        <div className="space-y-2.5">
+          {list.map((r) => {
+            const taken = r.direction === 'taken';
+            return (
+              <div
+                key={r._id}
+                className={cn(
+                  'flex items-start gap-3 rounded-2xl border border-l-4 border-slate-200 p-3.5 dark:border-slate-800',
+                  taken ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/40' : cn('bg-white dark:bg-slate-900', ACCENT[r.kind]),
+                  r.read && 'opacity-60'
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {taken && <span className="text-[13px] font-bold uppercase tracking-wide text-orange-700 dark:text-orange-300">You need to pay</span>}
+                    <Badge status={r.kind} />
+                    <span className="text-[13px] text-slate-500 tabular-nums dark:text-slate-400">Due {fmtDate(r.dueDate)}</span>
+                  </div>
+                  <p className="mt-1.5 text-[15px]">{r.message}</p>
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-sm">
+                    {r.person && <Link className="inline-flex min-h-11 items-center font-medium text-brand dark:text-brand-light" href={`/persons/${r.person._id}`}>{r.person.name}</Link>}
+                    {r.loan && <Link className="inline-flex min-h-11 items-center font-medium text-brand dark:text-brand-light" href={`/loans/${r.loan._id}`}>Open loan</Link>}
+                  </div>
                 </div>
+                {!r.read && <Button variant="ghost" onClick={() => markRead(r._id)}>Done</Button>}
               </div>
-              {!r.read && <button className="btn ghost" onClick={() => markRead(r._id)}>Done</button>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>
