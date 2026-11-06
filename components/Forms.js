@@ -1,23 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { inr, monthKey, toInputDate } from '@/lib/format';
 import { Button, ErrorBox, Field, Input, Row2, Segmented, Select, SheetActions, Textarea } from './ui';
 
+/**
+ * Runs a form save once. A ref (not state) blocks a second tap or Enter
+ * that arrives before React has re-rendered the disabled button, which
+ * would otherwise create the same record twice.
+ */
 function useSubmit(fn, onDone) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const running = useRef(false);
   const submit = async (e) => {
     e.preventDefault();
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     setError('');
     try {
       const res = await fn();
+      // Stay locked after success: the sheet is closing, so no second save
       onDone?.(res);
     } catch (err) {
       setError(err.message);
-    } finally {
+      running.current = false;
       setBusy(false);
     }
   };
@@ -27,8 +36,8 @@ function useSubmit(fn, onDone) {
 function Actions({ busy, onCancel, label = 'Save' }) {
   return (
     <SheetActions>
-      <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-      <Button type="submit" disabled={busy}>{busy ? 'Saving…' : label}</Button>
+      <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
+      <Button type="submit" loading={busy}>{busy ? 'Saving…' : label}</Button>
     </SheetActions>
   );
 }
@@ -195,6 +204,7 @@ export function BorrowFlow({ onSaved, onCancel }) {
   const [person, setPerson] = useState(null); // chosen person -> step 2
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const running = useRef(false);
 
   useEffect(() => {
     api.get('/persons').then((list) => {
@@ -211,12 +221,15 @@ export function BorrowFlow({ onSaved, onCancel }) {
       if (!p) return setError('Choose a person');
       return setPerson(p);
     }
+    if (running.current) return; // a double tap must not create the person twice
+    running.current = true;
     setBusy(true);
     try {
       setPerson(await api.post('/persons', newPerson));
     } catch (err) {
       setError(err.message);
     } finally {
+      running.current = false;
       setBusy(false);
     }
   };
@@ -258,7 +271,7 @@ export function BorrowFlow({ onSaved, onCancel }) {
       )}
       <SheetActions>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Next'}</Button>
+        <Button type="submit" loading={busy}>{busy ? 'Saving…' : 'Next'}</Button>
       </SheetActions>
     </form>
   );

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /** Joins class names, skipping empty ones: cn('a', cond && 'b') */
 export const cn = (...c) => c.filter(Boolean).join(' ');
@@ -35,11 +36,25 @@ export function PlusIcon({ className = 'size-[18px]' }) {
  * <Button> or, with href, a <Link> styled as a button.
  * variant: primary | tonal | ghost | danger, size: md | lg, icon: 'plus' (optional)
  */
-export function Button({ variant = 'primary', size = 'md', href, icon, className, children, ...props }) {
+export function Button({ variant = 'primary', size = 'md', href, icon, loading = false, disabled, className, children, ...props }) {
   const classes = cn(BUTTON.base, BUTTON[variant], BUTTON[size], icon && 'pl-4', className);
-  const content = <>{icon === 'plus' && <PlusIcon />}{children}</>;
+  const content = <>{loading ? <Spinner /> : icon === 'plus' && <PlusIcon />}{children}</>;
   if (href) return <Link href={href} className={classes} {...props}>{content}</Link>;
-  return <button type="button" className={classes} {...props}>{content}</button>;
+  return (
+    <button type="button" className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+      {content}
+    </button>
+  );
+}
+
+/** Small spinning circle shown inside a button while it is working */
+export function Spinner({ className = 'size-[18px]' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn('animate-spin', className)} fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 /** Text-sized button for inline actions ("Mark paid") with a 44px tap area */
@@ -421,11 +436,24 @@ export function BottomSheet({ title, onClose, children }) {
     };
   }, []);
 
-  // Tapping a field: scroll it into view inside the sheet once the keyboard is up
+  // Tapping a field: once the keyboard is up, scroll only the sheet so the field is visible.
+  // (scrollIntoView would also scroll the page and the iOS viewport, making the sheet jump.)
   const onFocus = (e) => {
     const el = e.target;
     if (!/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
-    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+    setTimeout(() => {
+      const box = bodyRef.current;
+      if (!box || !box.contains(el)) return;
+      const boxRect = box.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const actions = box.querySelector('[data-sheet-actions]');
+      const bottomGap = actions ? actions.offsetHeight + 12 : 12; // keep clear of the sticky Save bar
+      if (elRect.top < boxRect.top + 12) {
+        box.scrollBy({ top: elRect.top - boxRect.top - 12, behavior: 'smooth' });
+      } else if (elRect.bottom > boxRect.bottom - bottomGap) {
+        box.scrollBy({ top: elRect.bottom - boxRect.bottom + bottomGap, behavior: 'smooth' });
+      }
+    }, 300);
   };
 
   // Drag the handle down to close
@@ -445,9 +473,11 @@ export function BottomSheet({ title, onClose, children }) {
     ...(viewport.keyboard > 0 ? { marginBottom: viewport.keyboard, maxHeight: viewport.height - 12 } : {}),
   };
 
-  return (
+  // Rendered straight into <body> and above every other layer (z-60), so the bottom
+  // tab bar or the install card can never cover the form or the Save button
+  return createPortal(
     <div
-      className={cn('fixed inset-0 z-50 flex items-end bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-200 md:items-center md:justify-center md:p-6', shown ? 'opacity-100' : 'opacity-0')}
+      className={cn('fixed inset-0 z-[60] flex items-end bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-200 md:items-center md:justify-center md:p-6', shown ? 'opacity-100' : 'opacity-0')}
       onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
@@ -474,19 +504,20 @@ export function BottomSheet({ title, onClose, children }) {
         <div
           ref={bodyRef}
           onFocus={onFocus}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] md:pb-5"
+          className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] md:pb-5"
         >
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 /** Buttons pinned to the bottom of a BottomSheet */
 export function SheetActions({ children }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-5 mt-3 -mb-[calc(1rem+env(safe-area-inset-bottom))] flex gap-2.5 border-t border-slate-900/[0.06] bg-white/85 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:static md:mx-0 md:mb-0 md:justify-end md:border-0 md:bg-transparent md:px-0 md:pb-0 dark:border-white/[0.06] dark:bg-slate-900/85 md:dark:bg-transparent [&>*]:flex-1 md:[&>*]:flex-none">
+    <div data-sheet-actions className="sticky bottom-0 z-10 -mx-5 mt-3 -mb-[calc(1rem+env(safe-area-inset-bottom))] flex gap-2.5 border-t border-slate-900/[0.06] bg-white/85 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:static md:mx-0 md:mb-0 md:justify-end md:border-0 md:bg-transparent md:px-0 md:pb-0 dark:border-white/[0.06] dark:bg-slate-900/85 md:dark:bg-transparent [&>*]:flex-1 md:[&>*]:flex-none">
       {children}
     </div>
   );
