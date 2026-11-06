@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate, inr, monthLabel } from '@/lib/format';
-import { Badge, BottomSheet, Button, Card, CardHead, CardList, EmptyState, ErrorBox, Fab, LinkButton, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
+import { Badge, BottomSheet, Button, Card, CardHead, CardList, EmptyState, ErrorBox, LinkButton, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
 import { LoanForm, PaymentForm } from '@/components/Forms';
 
 export default function LoanDetail() {
@@ -67,7 +67,7 @@ export default function LoanDetail() {
         }
         actions={
           <>
-            {isActive && <Button className="max-md:hidden" onClick={() => setModal({ type: 'pay' })}>{taken ? '+ Add payment I made' : '+ Add payment'}</Button>}
+            {isActive && <Button variant="tonal" icon="plus" onClick={() => setModal({ type: 'pay' })}>{taken ? 'Add payment I made' : 'Add payment'}</Button>}
             {waLink && isActive && <Button variant="ghost" href={waLink} target="_blank" rel="noreferrer">WhatsApp reminder</Button>}
             <Button variant="ghost" onClick={() => setModal({ type: 'edit' })}>Edit</Button>
             <Button variant="ghost" onClick={toggleClose}>{isActive ? 'Close loan' : 'Reopen'}</Button>
@@ -151,8 +151,6 @@ export default function LoanDetail() {
           )}
         </Card>
       </div>
-
-      {isActive && <Fab onClick={() => setModal({ type: 'pay' })} label={taken ? 'Add payment I made' : 'Add payment'} />}
 
       {modal?.type === 'pay' && (
         <BottomSheet title={taken ? `Payment to ${loan.person.name}` : `Payment from ${loan.person.name}`} onClose={() => setModal(null)}>

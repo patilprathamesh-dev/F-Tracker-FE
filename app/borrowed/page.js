@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate, inr } from '@/lib/format';
-import { Badge, BottomSheet, Button, Card, CardList, EmptyState, ErrorBox, Fab, ListCard, ListSkeleton, PageHeader, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
+import { Badge, BottomSheet, Button, Card, CardList, EmptyState, ErrorBox, ListCard, ListSkeleton, PageHeader, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
 import { BorrowFlow } from '@/components/Forms';
 import PullToRefresh from '@/components/PullToRefresh';
 
@@ -32,7 +32,7 @@ export default function BorrowedPage() {
       <PageHeader
         title="Borrowed"
         subtitle="Money I have taken from people"
-        actions={<Button className="max-md:hidden" onClick={() => setAdding(true)}>+ Borrow money</Button>}
+        actions={<Button variant="tonal" icon="plus" onClick={() => setAdding(true)}>Borrow money</Button>}
       />
       <ErrorBox error={error} />
 
@@ -80,8 +80,6 @@ export default function BorrowedPage() {
           </Card>
         </>
       )}
-
-      <Fab onClick={() => setAdding(true)} label="Borrow money" />
       {adding && (
         <BottomSheet title="Borrow money" onClose={() => setAdding(false)}>
           <BorrowFlow onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); load(); }} />

@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate, inr } from '@/lib/format';
-import { Badge, BottomSheet, Button, Card, CardHead, CardList, EmptyState, ErrorBox, Fab, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
+import { Badge, BottomSheet, Button, Card, CardHead, CardList, EmptyState, ErrorBox, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
 import { LoanForm, PersonForm } from '@/components/Forms';
 
 function LoanSection({ title, loans, direction, onAdd, router }) {
@@ -12,7 +12,7 @@ function LoanSection({ title, loans, direction, onAdd, router }) {
   return (
     <Card className="mb-4">
       <CardHead title={title}>
-        <Button variant={taken ? 'ghost' : 'primary'} onClick={onAdd}>{taken ? '+ Borrow money' : '+ Give money'}</Button>
+        <Button variant="tonal" icon="plus" onClick={onAdd}>{taken ? 'Borrow money' : 'Give money'}</Button>
       </CardHead>
       {loans.length === 0 ? <EmptyState>{taken ? 'You have not borrowed from this person.' : 'No money given yet.'}</EmptyState> : (
         <>
@@ -104,8 +104,6 @@ export default function PersonDetail() {
 
       <LoanSection title="Money I gave" loans={given} direction="given" onAdd={() => setModal('given')} router={router} />
       <LoanSection title="Money I took" loans={taken} direction="taken" onAdd={() => setModal('taken')} router={router} />
-
-      <Fab onClick={() => setModal('given')} label={`Give money to ${person.name}`} />
 
       {modal === 'edit' && (
         <BottomSheet title="Edit person" onClose={() => setModal(null)}>

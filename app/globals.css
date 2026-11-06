@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode is controlled by the "dark" class on <html> (Light / Dark / System on the Account page) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
   --color-brand: #0f766e;
@@ -13,7 +16,10 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark; /* native controls (date pickers, scrollbars) follow the chosen theme */
   }
   body {
     @apply min-h-dvh bg-slate-50 font-sans text-base text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;

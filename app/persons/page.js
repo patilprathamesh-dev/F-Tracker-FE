@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { inr, monthLabel } from '@/lib/format';
-import { BottomSheet, Button, cn, EmptyState, ErrorBox, Fab, Input, ListSkeleton, PageHeader } from '@/components/ui';
+import { BottomSheet, Button, cn, EmptyState, ErrorBox, Input, ListSkeleton, PageHeader } from '@/components/ui';
 import { PersonForm } from '@/components/Forms';
 import PullToRefresh from '@/components/PullToRefresh';
 import Link from 'next/link';
@@ -65,7 +65,7 @@ export default function PersonsPage() {
   return (
     <>
       <PullToRefresh onRefresh={load} />
-      <PageHeader title="People" actions={<Button className="max-md:hidden" onClick={() => setAdding(true)}>+ Add person</Button>} />
+      <PageHeader title="People" actions={<Button variant="tonal" icon="plus" onClick={() => setAdding(true)}>Add person</Button>} />
       <Input
         type="search"
         inputMode="search"
@@ -118,8 +118,6 @@ export default function PersonsPage() {
           ))}
         </div>
       )}
-
-      <Fab onClick={() => setAdding(true)} label="Add person" />
       {adding && (
         <BottomSheet title="Add person" onClose={() => setAdding(false)}>
           <PersonForm onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); load(); }} />

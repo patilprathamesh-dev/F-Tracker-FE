@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDate, inr, monthLabel } from '@/lib/format';
-import { Badge, Button, Card, CardHead, CardList, cn, EmptyState, ErrorBox, Fab, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
+import { Badge, Button, Card, CardHead, CardList, cn, EmptyState, ErrorBox, ListCard, PageHeader, PageSkeleton, Stat, StatGrid, Table, Td, Tr } from '@/components/ui';
 import PullToRefresh from '@/components/PullToRefresh';
 
 export default function Dashboard() {
@@ -27,7 +27,7 @@ export default function Dashboard() {
       <PullToRefresh onRefresh={load} />
       <PageHeader
         title="Dashboard"
-        actions={<Button href="/persons?add=1" className="max-md:hidden">+ Add person</Button>}
+        actions={<Button variant="tonal" icon="plus" href="/persons?add=1">Add person</Button>}
       />
 
       <Card tone={net >= 0 ? 'good' : 'bad'} className="mb-4">
@@ -121,8 +121,6 @@ export default function Dashboard() {
           ))}
         </div>
       </Card>
-
-      <Fab href="/persons?add=1" label="Add person" />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import AuthGate from '@/components/AuthGate';
+import { THEME_SCRIPT } from '@/lib/theme';
 
 // Self-hosted by Next.js: no layout shift, and it works offline after the first load
 const inter = Inter({ subsets: ['latin', 'latin-ext'], display: 'swap', variable: '--font-inter' });
@@ -46,7 +47,11 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    // suppressHydrationWarning: the theme script adds the "dark" class before React loads
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="font-sans">
         <AuthGate>{children}</AuthGate>
       </body>

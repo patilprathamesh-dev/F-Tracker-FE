@@ -43,13 +43,13 @@ export function PersonForm({ initial = {}, onSaved, onCancel }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 pt-2">
       <ErrorBox error={error} />
-      <Field label="Name *"><Input required value={f.name} onChange={set('name')} autoComplete="name" autoCapitalize="words" /></Field>
+      <Field label="Name *"><Input required placeholder="e.g. Rahul Sharma" value={f.name} onChange={set('name')} autoComplete="name" autoCapitalize="words" /></Field>
       <Row2>
-        <Field label="Phone"><Input type="tel" inputMode="tel" autoComplete="tel" value={f.phone || ''} onChange={set('phone')} /></Field>
-        <Field label="Email"><Input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" value={f.email || ''} onChange={set('email')} /></Field>
+        <Field label="Phone"><Input type="tel" inputMode="tel" autoComplete="tel" placeholder="e.g. 98765 43210" value={f.phone || ''} onChange={set('phone')} /></Field>
+        <Field label="Email"><Input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="name@example.com" value={f.email || ''} onChange={set('email')} /></Field>
       </Row2>
-      <Field label="Address"><Input autoComplete="street-address" value={f.address || ''} onChange={set('address')} /></Field>
-      <Field label="Notes"><Textarea rows={3} value={f.notes || ''} onChange={set('notes')} /></Field>
+      <Field label="Address"><Input autoComplete="street-address" placeholder="Area, city" value={f.address || ''} onChange={set('address')} /></Field>
+      <Field label="Notes"><Textarea rows={3} placeholder="Anything to remember about this person" value={f.notes || ''} onChange={set('notes')} /></Field>
       <Actions busy={busy} onCancel={onCancel} />
     </form>
   );
@@ -80,15 +80,15 @@ export function LoanForm({ personId, direction = 'given', initial = {}, onSaved,
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 pt-2">
       <ErrorBox error={error} />
-      <Field label="Title" hint={taken ? "Optional, e.g. 'Home repair'" : "Optional, e.g. 'Shop loan'"}>
-        <Input value={f.title || ''} onChange={set('title')} autoComplete="off" />
+      <Field label="Title" hint="Optional">
+        <Input placeholder={taken ? 'e.g. Home repair' : 'e.g. Shop loan'} value={f.title || ''} onChange={set('title')} autoComplete="off" />
       </Field>
       <Row2>
         <Field label={taken ? 'Amount taken (₹) *' : 'Amount given (₹) *'}>
-          <Input required type="number" inputMode="decimal" min="0" step="any" autoComplete="off" className="tabular-nums" value={f.principal} onChange={set('principal')} />
+          <Input required type="number" inputMode="decimal" min="0" step="any" autoComplete="off" className="tabular-nums" placeholder="₹ 1,00,000" value={f.principal} onChange={set('principal')} />
         </Field>
         <Field label="Interest % per month *">
-          <Input required type="number" inputMode="decimal" min="0" step="any" autoComplete="off" className="tabular-nums" value={f.interestRate} onChange={set('interestRate')} />
+          <Input required type="number" inputMode="decimal" min="0" step="any" autoComplete="off" className="tabular-nums" placeholder="e.g. 2" value={f.interestRate} onChange={set('interestRate')} />
         </Field>
       </Row2>
       {monthly > 0 && (
@@ -101,10 +101,10 @@ export function LoanForm({ personId, direction = 'given', initial = {}, onSaved,
           <Input required type="date" value={f.startDate} onChange={set('startDate')} />
         </Field>
         <Field label="Payment due on day" hint="Day of every month (1–28)">
-          <Input type="number" inputMode="numeric" min="1" max="28" className="tabular-nums" value={f.dueDay} onChange={set('dueDay')} />
+          <Input type="number" inputMode="numeric" min="1" max="28" className="tabular-nums" placeholder="5" value={f.dueDay} onChange={set('dueDay')} />
         </Field>
       </Row2>
-      <Field label="Description / note"><Textarea rows={3} value={f.description || ''} onChange={set('description')} /></Field>
+      <Field label="Description / note"><Textarea rows={3} placeholder="e.g. Given in cash, agreement signed" value={f.description || ''} onChange={set('description')} /></Field>
       <Actions busy={busy} onCancel={onCancel} label={initial._id ? 'Save' : taken ? 'Borrow money' : 'Give money'} />
     </form>
   );
@@ -149,7 +149,7 @@ export function PaymentForm({ loan, defaultMonth, defaultAmount, onSaved, onCanc
           <Input
             required type="number" inputMode="decimal" min="0" step="any" autoComplete="off" className="tabular-nums"
             max={f.type === 'principal' && loan.principalOutstanding ? loan.principalOutstanding : undefined}
-            value={f.amount} onChange={set('amount')}
+            placeholder="₹ 0" value={f.amount} onChange={set('amount')}
           />
         </Field>
       </Row2>
@@ -177,7 +177,7 @@ export function PaymentForm({ loan, defaultMonth, defaultAmount, onSaved, onCanc
           <option value="other">Other</option>
         </Select>
       </Field>
-      <Field label="Note"><Textarea rows={2} value={f.note} onChange={set('note')} /></Field>
+      <Field label="Note"><Textarea rows={2} placeholder="e.g. Paid by UPI, ref 1234" value={f.note} onChange={set('note')} /></Field>
       <Actions busy={busy} onCancel={onCancel} label={taken ? 'Save payment I made' : 'Save payment'} />
     </form>
   );
@@ -249,10 +249,10 @@ export function BorrowFlow({ onSaved, onCancel }) {
       ) : (
         <>
           <Field label="Name *">
-            <Input required autoComplete="name" autoCapitalize="words" value={newPerson.name} onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })} />
+            <Input required autoComplete="name" autoCapitalize="words" placeholder="e.g. Vikas Mehta" value={newPerson.name} onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })} />
           </Field>
           <Field label="Phone">
-            <Input type="tel" inputMode="tel" autoComplete="tel" value={newPerson.phone} onChange={(e) => setNewPerson({ ...newPerson, phone: e.target.value })} />
+            <Input type="tel" inputMode="tel" autoComplete="tel" placeholder="e.g. 98220 01122" value={newPerson.phone} onChange={(e) => setNewPerson({ ...newPerson, phone: e.target.value })} />
           </Field>
         </>
       )}

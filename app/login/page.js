@@ -52,10 +52,10 @@ export default function LoginPage() {
         <div className="flex flex-col gap-4">
           <ErrorBox error={error} />
           <Field label="Email">
-            <Input type="email" inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input type="email" inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           <Field label="Password">
-            <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input type="password" autoComplete="current-password" required placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Button type="submit" size="lg" disabled={busy} className="mt-1">{busy ? 'Logging in…' : 'Log in'}</Button>
         </div>

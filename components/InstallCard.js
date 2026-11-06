@@ -37,7 +37,7 @@ export default function InstallCard() {
   };
 
   return (
-    <div className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-50 md:hidden" role="dialog" aria-label="Install the app">
+    <div className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-50 md:hidden" role="dialog" aria-label="Install the app">
       <div className="relative rounded-2xl border border-slate-200 bg-white p-4 pr-12 shadow-xl dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-start gap-3">
           <Logo size="md" />

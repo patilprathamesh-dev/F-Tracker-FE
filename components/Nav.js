@@ -96,7 +96,7 @@ export default function Nav() {
   useEffect(() => setAppBadge(unread), [unread]);
 
   const count = unread > 0 && (
-    <span className="absolute -top-1 left-1/2 ml-1.5 min-w-[18px] rounded-full bg-bad px-1 text-center text-[11px] font-bold leading-[18px] text-white tabular-nums">
+    <span className="absolute -top-1.5 left-1/2 ml-1.5 min-w-[18px] rounded-full bg-bad px-1 text-center text-[11px] font-bold leading-[18px] text-white tabular-nums ring-2 ring-white dark:ring-slate-900">
       {unread > 99 ? '99+' : unread}
     </span>
   );
@@ -189,12 +189,17 @@ export default function Nav() {
         </div>
       </header>
 
-      {/* Bottom tab bar (phones) */}
+      {/* Bottom tab bar (phones): a floating frosted-glass pill above the home indicator */}
       <nav
         aria-label="Tabs"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 pb-safe pl-safe pr-safe backdrop-blur-xl md:hidden dark:border-slate-800 dark:bg-slate-900/90"
+        className={cn(
+          'fixed left-4 right-4 z-40 md:hidden',
+          'bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)-0.5rem))]',
+          'max-[400px]:left-3 max-[400px]:right-3',
+          'ml-[env(safe-area-inset-left)] mr-[env(safe-area-inset-right)]'
+        )}
       >
-        <div className="grid grid-cols-5">
+        <div className="flex h-16 items-center gap-0.5 rounded-full border border-white/70 bg-white/75 p-1.5 max-[400px]:h-14 max-[400px]:gap-0 max-[400px]:p-1 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-slate-900/75 dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
           {TABS.map((t) => {
             const active = isActive(t.href, path);
             return (
@@ -203,15 +208,17 @@ export default function Nav() {
                 href={t.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex min-h-14 flex-col items-center justify-center gap-0.5 pt-1.5 text-[11px] font-medium transition active:opacity-60',
-                  active ? 'text-brand dark:text-brand-light' : 'text-slate-500 dark:text-slate-400'
+                  'relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-semibold tracking-tight transition-colors duration-200 active:scale-95 max-[400px]:text-[9.5px] max-[400px]:tracking-tighter',
+                  active
+                    ? 'bg-slate-900/[0.06] text-slate-900 dark:bg-white/10 dark:text-white'
+                    : 'text-slate-500 dark:text-slate-400'
                 )}
               >
                 <span className="relative">
-                  <Icon d={ICONS[t.icon]} />
+                  <Icon d={ICONS[t.icon]} className={cn('size-[22px] max-[400px]:size-5', active && 'text-brand dark:text-brand-light')} />
                   {t.href === '/reminders' && count}
                 </span>
-                {t.label}
+                <span className="max-w-full truncate px-0.5 max-[400px]:px-0">{t.label}</span>
               </Link>
             );
           })}

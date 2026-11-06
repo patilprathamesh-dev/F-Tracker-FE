@@ -9,19 +9,37 @@ export const cn = (...c) => c.filter(Boolean).join(' ');
 /* ------------------------------------------------------------------ Buttons */
 
 const BUTTON = {
-  base: 'inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-xl font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
-  primary: 'bg-brand text-white shadow-sm active:bg-teal-800 dark:bg-brand-light dark:text-teal-950 dark:active:bg-teal-300',
-  ghost: 'border border-slate-200 bg-white text-slate-800 active:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:active:bg-slate-800',
-  danger: 'border border-slate-200 bg-white text-bad active:bg-red-50 dark:border-slate-700 dark:bg-slate-900 dark:text-red-400 dark:active:bg-red-950',
-  md: 'min-h-11 px-4 text-[15px]',
-  lg: 'min-h-12 w-full px-5 text-base',
+  base: 'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20',
+  // Solid: the main action of a form (Save, Log in)
+  primary: 'bg-gradient-to-b from-teal-600 to-brand text-white shadow-[0_8px_20px_-8px_rgba(15,118,110,0.7)] ring-1 ring-inset ring-white/15 hover:brightness-110 active:brightness-95 dark:from-teal-300 dark:to-brand-light dark:text-teal-950',
+  // See-through teal: page actions (+ Add person, + Borrow money)
+  tonal: 'bg-brand/10 text-brand ring-1 ring-inset ring-brand/15 backdrop-blur-md hover:bg-brand/15 active:bg-brand/20 dark:bg-brand-light/15 dark:text-brand-light dark:ring-brand-light/20 dark:hover:bg-brand-light/20',
+  // Frosted glass: secondary actions (Cancel, Edit, Call)
+  ghost: 'bg-white/60 text-slate-800 ring-1 ring-inset ring-slate-900/10 backdrop-blur-md hover:bg-white/90 active:bg-white dark:bg-white/[0.06] dark:text-slate-100 dark:ring-white/10 dark:hover:bg-white/10',
+  // See-through red: Delete
+  danger: 'bg-red-500/[0.08] text-bad ring-1 ring-inset ring-red-500/15 backdrop-blur-md hover:bg-red-500/[0.12] active:bg-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:ring-red-400/20',
+  md: 'min-h-11 px-5 text-[15px]',
+  lg: 'min-h-[52px] w-full px-6 text-base',
 };
 
-/** <Button> or, with href, a <Link> styled as a button. variant: primary | ghost | danger, size: md | lg */
-export function Button({ variant = 'primary', size = 'md', href, className, children, ...props }) {
-  const classes = cn(BUTTON.base, BUTTON[variant], BUTTON[size], className);
-  if (href) return <Link href={href} className={classes} {...props}>{children}</Link>;
-  return <button type="button" className={classes} {...props}>{children}</button>;
+/** Plus icon used on "add" buttons */
+export function PlusIcon({ className = 'size-[18px]' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/**
+ * <Button> or, with href, a <Link> styled as a button.
+ * variant: primary | tonal | ghost | danger, size: md | lg, icon: 'plus' (optional)
+ */
+export function Button({ variant = 'primary', size = 'md', href, icon, className, children, ...props }) {
+  const classes = cn(BUTTON.base, BUTTON[variant], BUTTON[size], icon && 'pl-4', className);
+  const content = <>{icon === 'plus' && <PlusIcon />}{children}</>;
+  if (href) return <Link href={href} className={classes} {...props}>{content}</Link>;
+  return <button type="button" className={classes} {...props}>{content}</button>;
 }
 
 /** Text-sized button for inline actions ("Mark paid") with a 44px tap area */
@@ -31,14 +49,6 @@ export function LinkButton({ className, children, ...props }) {
       {children}
     </button>
   );
-}
-
-/** Round floating "+" button for the page's main action (phones only) */
-export function Fab({ label, onClick, href }) {
-  const classes = 'fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-teal-900/30 transition active:scale-95 md:hidden dark:bg-brand-light dark:text-teal-950';
-  const icon = <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
-  if (href) return <Link href={href} className={classes} aria-label={label}>{icon}</Link>;
-  return <button type="button" className={classes} onClick={onClick} aria-label={label}>{icon}</button>;
 }
 
 /* ------------------------------------------------------------------ Logo */
@@ -82,7 +92,7 @@ export function Logo({ size = 'sm', className }) {
 /* ------------------------------------------------------------------ Layout */
 
 const CARD_TONE = {
-  default: 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900',
+  default: 'border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:border-white/[0.06] dark:bg-slate-900',
   good: 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/60',
   bad: 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/60',
   info: 'border-transparent bg-sky-50 text-[15px] dark:bg-sky-950/60',
@@ -91,7 +101,7 @@ const CARD_TONE = {
 /** tone: default | good | bad | info (colours are chosen here so they never clash with className) */
 export function Card({ tone = 'default', className, children, ...props }) {
   return (
-    <section className={cn('rounded-2xl border p-4', CARD_TONE[tone], className)} {...props}>
+    <section className={cn('rounded-[20px] border p-4', CARD_TONE[tone], className)} {...props}>
       {children}
     </section>
   );
@@ -164,7 +174,7 @@ const STAT_TONE = { good: 'text-good dark:text-green-400', bad: 'text-bad dark:t
 
 export function Stat({ label, value, hint, tone }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-900">
+    <div className="min-w-0 rounded-[20px] border border-slate-200/70 bg-white p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:border-white/[0.06] dark:bg-slate-900">
       <div className="text-[13px] leading-tight text-slate-500 dark:text-slate-400">{label}</div>
       <div className={cn('mt-1 truncate text-[22px] font-bold tracking-tight tabular-nums sm:text-[28px]', STAT_TONE[tone])}>{value}</div>
       {hint && <div className="mt-0.5 text-[13px] leading-tight text-slate-500 dark:text-slate-400">{hint}</div>}
@@ -242,7 +252,7 @@ export function ListCard({ href, onClick, title, amount, badge, meta, sub, accen
     </>
   );
   const classes = cn(
-    'block w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-left dark:border-slate-800 dark:bg-slate-900',
+    'block w-full rounded-[20px] border border-slate-200/70 bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:border-white/[0.06] dark:bg-slate-900',
     accent === 'taken' && 'border-l-4 border-l-orange-500',
     (href || onClick) && 'transition active:scale-[0.99] active:bg-slate-50 dark:active:bg-slate-800'
   );
@@ -299,7 +309,7 @@ export function Td({ right, muted, className, children }) {
 /** Segmented control: options = [{ value, label }] */
 export function Segmented({ value, onChange, options, className }) {
   return (
-    <div className={cn('flex rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800', className)} role="tablist">
+    <div className={cn('flex rounded-full bg-slate-900/[0.05] p-1 ring-1 ring-inset ring-slate-900/[0.04] dark:bg-white/[0.06] dark:ring-white/5', className)} role="tablist">
       {options.map((o) => (
         <button
           key={o.value}
@@ -308,8 +318,8 @@ export function Segmented({ value, onChange, options, className }) {
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'min-h-10 flex-1 rounded-lg px-3 text-[15px] font-semibold transition',
-            value === o.value ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white' : 'text-slate-500 active:bg-white/50 dark:text-slate-400'
+            'min-h-10 flex-1 rounded-full px-3 text-[15px] font-semibold transition duration-200',
+            value === o.value ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.08)] dark:bg-slate-700 dark:text-white' : 'text-slate-500 active:bg-white/50 dark:text-slate-400'
           )}
         >
           {o.label}
@@ -321,14 +331,14 @@ export function Segmented({ value, onChange, options, className }) {
 
 /* ------------------------------------------------------------------ Forms */
 
-const CONTROL = 'block w-full min-w-0 min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-brand-light';
+const CONTROL = 'block w-full min-w-0 min-h-12 rounded-2xl border border-transparent bg-slate-100/80 px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 transition duration-150 focus:border-brand/40 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand/10 disabled:opacity-60 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-light/50 dark:focus:bg-slate-950 dark:focus:ring-brand-light/10';
 
 export function Field({ label, hint, children, className }) {
   return (
     <label className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</span>
+      <span className="ml-1 text-[13px] font-semibold text-slate-600 dark:text-slate-300">{label}</span>
       {children}
-      {hint && <small className="text-[13px] text-slate-500 dark:text-slate-400">{hint}</small>}
+      {hint && <small className="ml-1 text-[13px] text-slate-500 dark:text-slate-400">{hint}</small>}
     </label>
   );
 }
@@ -341,7 +351,7 @@ export function Input({ className, ...props }) {
 export function Select({ className, children, ...props }) {
   return (
     <select
-      className={cn(CONTROL, 'appearance-none bg-[url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 20%27 fill=%27%2394a3b8%27><path d=%27M5.5 7.5 10 12l4.5-4.5%27 stroke=%27%2394a3b8%27 stroke-width=%271.8%27 fill=%27none%27 stroke-linecap=%27round%27/></svg>")] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10', className)}
+      className={cn(CONTROL, 'appearance-none bg-[url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 20%27 fill=%27%2394a3b8%27><path d=%27M5.5 7.5 10 12l4.5-4.5%27 stroke=%27%2394a3b8%27 stroke-width=%271.8%27 fill=%27none%27 stroke-linecap=%27round%27/></svg>")] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat pr-11', className)}
       {...props}
     >
       {children}
@@ -350,7 +360,7 @@ export function Select({ className, children, ...props }) {
 }
 
 export function Textarea({ className, ...props }) {
-  return <textarea className={cn(CONTROL, 'resize-y', className)} {...props} />;
+  return <textarea className={cn(CONTROL, 'min-h-24 resize-none', className)} {...props} />;
 }
 
 /** Two fields side by side from 640px, stacked on phones */
@@ -361,14 +371,17 @@ export function Row2({ children }) {
 /* ------------------------------------------------------------------ Bottom sheet */
 
 /**
- * A bottom sheet on phones (slides up, drag handle, max 90dvh, scrolls inside)
+ * A bottom sheet on phones (slides up, drag handle, scrolls inside, stays above the keyboard)
  * and a centered modal from 768px. Put form buttons in <SheetActions> so they
- * stay stuck to the bottom above the home indicator.
+ * stay stuck to the bottom of the sheet.
  */
 export function BottomSheet({ title, onClose, children }) {
   const [shown, setShown] = useState(false);
   const [dragY, setDragY] = useState(0);
+  // Space taken by the iPhone keyboard, and the height left above it
+  const [viewport, setViewport] = useState({ keyboard: 0, height: null });
   const startY = useRef(null);
+  const bodyRef = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -381,14 +394,39 @@ export function BottomSheet({ title, onClose, children }) {
     const frame = requestAnimationFrame(() => setShown(true));
     const onKey = (e) => e.key === 'Escape' && closeRef.current();
     window.addEventListener('keydown', onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // Stop the page behind from scrolling (also on iOS, where overflow:hidden alone is not enough)
+    const { body } = document;
+    const scrollY = window.scrollY;
+    const prev = { overflow: body.style.overflow, position: body.style.position, top: body.style.top, width: body.style.width };
+    Object.assign(body.style, { overflow: 'hidden', position: 'fixed', top: `-${scrollY}px`, width: '100%' });
+
+    // Keep the sheet above the on-screen keyboard
+    const vv = window.visualViewport;
+    const onResize = () => {
+      if (!vv) return;
+      const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setViewport({ keyboard, height: vv.height });
+    };
+    vv?.addEventListener('resize', onResize);
+    vv?.addEventListener('scroll', onResize);
+    onResize();
+
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = overflow;
+      vv?.removeEventListener('resize', onResize);
+      vv?.removeEventListener('scroll', onResize);
+      Object.assign(body.style, prev);
+      window.scrollTo(0, scrollY);
     };
   }, []);
+
+  // Tapping a field: scroll it into view inside the sheet once the keyboard is up
+  const onFocus = (e) => {
+    const el = e.target;
+    if (!/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+  };
 
   // Drag the handle down to close
   const onTouchStart = (e) => { startY.current = e.touches[0].clientY; };
@@ -402,32 +440,44 @@ export function BottomSheet({ title, onClose, children }) {
     startY.current = null;
   };
 
+  const panelStyle = {
+    ...(dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : {}),
+    ...(viewport.keyboard > 0 ? { marginBottom: viewport.keyboard, maxHeight: viewport.height - 12 } : {}),
+  };
+
   return (
     <div
-      className={cn('fixed inset-0 z-50 flex items-end bg-black/40 transition-opacity duration-200 md:items-center md:justify-center md:p-6', shown ? 'opacity-100' : 'opacity-0')}
+      className={cn('fixed inset-0 z-50 flex items-end bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-200 md:items-center md:justify-center md:p-6', shown ? 'opacity-100' : 'opacity-0')}
       onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+        style={panelStyle}
         className={cn(
-          'flex max-h-[90dvh] w-full flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-200 ease-out pl-safe pr-safe dark:bg-slate-900',
-          'md:max-w-lg md:rounded-2xl',
+          'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl transition-transform duration-200 ease-out pl-safe pr-safe dark:bg-slate-900',
+          'md:max-h-[85dvh] md:max-w-lg md:rounded-3xl',
           shown ? 'translate-y-0' : 'translate-y-full md:translate-y-8'
         )}
       >
         <div className="shrink-0 touch-none" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
           <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-slate-300 md:hidden dark:bg-slate-700" />
-          <div className="flex items-center justify-between gap-2 px-4 pt-2 pb-1 md:pt-4">
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <button type="button" onClick={close} aria-label="Close" className="-mr-2 flex size-11 items-center justify-center rounded-full text-slate-500 active:bg-slate-100 dark:active:bg-slate-800">
-              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          <div className="flex items-center justify-between gap-2 px-5 pt-2 pb-2 md:pt-5">
+            <h3 className="text-lg font-bold tracking-tight">{title}</h3>
+            <button type="button" onClick={close} aria-label="Close" className="-mr-1.5 flex size-9 items-center justify-center rounded-full bg-slate-900/[0.05] text-slate-500 transition active:scale-95 active:bg-slate-900/10 dark:bg-white/10 dark:text-slate-300">
+              <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
             </button>
           </div>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4">{children}</div>
+        {/* min-h-0 + flex-1: lets this area shrink to the sheet and scroll, instead of overflowing it */}
+        <div
+          ref={bodyRef}
+          onFocus={onFocus}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] md:pb-5"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -436,7 +486,7 @@ export function BottomSheet({ title, onClose, children }) {
 /** Buttons pinned to the bottom of a BottomSheet */
 export function SheetActions({ children }) {
   return (
-    <div className="sticky bottom-0 -mx-4 mt-2 -mb-[calc(1rem+env(safe-area-inset-bottom))] md:mb-0 flex gap-2 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0 dark:border-slate-800 dark:bg-slate-900/95 md:dark:bg-transparent [&>*]:flex-1 md:[&>*]:flex-none md:justify-end">
+    <div className="sticky bottom-0 z-10 -mx-5 mt-3 -mb-[calc(1rem+env(safe-area-inset-bottom))] flex gap-2.5 border-t border-slate-900/[0.06] bg-white/85 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:static md:mx-0 md:mb-0 md:justify-end md:border-0 md:bg-transparent md:px-0 md:pb-0 dark:border-white/[0.06] dark:bg-slate-900/85 md:dark:bg-transparent [&>*]:flex-1 md:[&>*]:flex-none">
       {children}
     </div>
   );
